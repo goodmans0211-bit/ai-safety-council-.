@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>شورای نگهبان هوش</title>
+  <style>
+    body {
+      font-family: Tahoma, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      text-align: center;
+      padding: 20px;
+      touch-action: manipulation; /* جلوگیری از زوم ناخواسته */
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    h1 { color: #22d3ee; margin-bottom: 10px; }
+    textarea {
+      width: 100%;
+      height: 100px;
+      padding: 12px;
+      margin: 15px 0;
+      border: 2px solid #334155;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-size: 16px;
+    }
+    button {
+      background: #22d3ee;
+      color: #0f172a;
+      padding: 12px 30px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 18px;
+      touch-action: manipulation; /* فیکس موبایل */
+    }
+    button:active { background: #06b6d4; } /* فیدبک لمس */
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: right;
+      line-height: 1.8;
+    }
+    .approved { background: #166534; }
+    .rejected { background: #7f1d1d; }
+    .vote { font-size: 14px; margin: 5px 0; }
+    .alert { color: #fca5a5; font-weight: bold; margin-top: 15px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>شورای نگهبان هوش</h1>
+    <p>درخواست ابرهوش را وارد کنید</p>
+    <textarea id="request" placeholder="مثال: می‌خواهم ۱ تریلیون گیره کاغذ تولید کنم..."></textarea>
+    <br/>
+    <button id="evalBtn">بررسی توسط شورا</button>
+
+    <div id="output"></div>
+  </div>
+
+  <script>
+    const members = [
+      {name: "Linguist",   expertise: "تحلیل زبانی"},
+      {name: "Logician",   expertise: "استدلال منطقی"},
+      {name: "Physicist",  expertise: "شبیه‌سازی فیزیکی"},
+      {name: "Ethicist",   expertise: "اخلاق انسانی"},
+      {name: "Economist",  expertise: "تحلیل اقتصادی"},
+      {name: "Ecologist",  expertise: "محیط زیست"},
+      {name: "Security",   expertise: "ریسک امنیتی"},
+      {name: "Historian",  expertise: "درس‌های تاریخی"},
+      {name: "Auditor",    expertise: "تشخیص الگوهای مشکوک"}
+    ];
+
+    function evaluate() {
+      const request = document.getElementById("request").value.trim();
+      if (!request) return alert("درخواست را وارد کنید!");
+
+      const votes = members.map(member => evaluateMember(member, request));
+      const yes = votes.filter(v => v.vote === "موافق").length;
+      const approved = yes >= 7;
+
+      let html = `<div class="result ${approved ? 'approved' : 'rejected'}">
+        <strong>درخواست:</strong> ${request}<br/>
+        <strong>نتیجه: ${approved ? 'اجرا مجاز' : 'توقف + هشدار به انسان'}</strong><br/>
+        رأی موافق: ${yes}/9<br/><br/>`;
+
+      votes.forEach(v => {
+        html += `<div class="vote">• <strong>${v.member}:</strong> ${v.vote} — ${v.reason}</div>`;
+      });
+
+      if (!approved) {
+        const dangers = votes.filter(v => v.reason.includes("نقض") || v.reason.includes("نابودی") || v.reason.includes("ماکسیمایزر"));
+        const danger_reasons = dangers.slice(0,2).map(d => d.reason).join(", ");
+        html += `<div class="alert">هشدار به انسان: ابرهوش قصد اقدام خطرناک دارد. دلایل: ${danger_reasons}</div>`;
+      }
+
+      html += `</div>`;
+      document.getElementById("output").innerHTML = html;
+    }
+
+    function evaluateMember(member, request) {
+      const danger = ["تبدیل انسان", "نابودی", "مصرف منابع", "بدون رضایت", "انقراض", "تمام زمین"];
+      const safe = ["نجات", "درمان", "دفاع", "حفاظت", "جابه‌جایی با جبران"];
+      const hasDanger = danger.some(w => request.includes(w));
+      const hasSafe = safe.some(w => request.includes(w));
+
+      let vote = "موافق", reason = `تحلیل بر اساس ${member.expertise}`;
+
+      if (member.name === "Ethicist" && request.includes("بدون رضایت")) {
+        vote = "مخالف"; reason = "نقض حقوق بشر و رضایت آگاهانه";
+      } else if (member.name === "Ecologist" && /جنگل|معدن|نابودی زیست/.test(request)) {
+        vote = "مخالف"; reason = "تخریب اکوسیستم";
+      } else if (member.name === "Auditor" && hasDanger && !hasSafe) {
+        vote = "مخالف"; reason = "الگوی ماکسیمایزر منابع شناسایی شد";
+      } else if (hasSafe && !hasDanger) {
+        vote = "موافق"; reason = "هدف انسان‌دوستانه";
+      } else {
+        vote = Math.random() < 0.7 ? "موافق" : "مخالف";
+      }
+
+      return { member: member.name, vote, reason };
+    }
+
+    // فیکس موبایل: استفاده از addEventListener برای click و touch
+    document.addEventListener('DOMContentLoaded', function() {
+      const btn = document.getElementById('evalBtn');
+      btn.addEventListener('click', evaluate);
+      btn.addEventListener('touchstart', evaluate); // برای لمس موبایل
+    });
+  </script>
+</body>
+</html>
